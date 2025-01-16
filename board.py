@@ -92,7 +92,8 @@ class CheckWord:
         self.word = word
         if len(self.word) >= 3:
             self.check_words = [w for w in words if word in w]
-        self.check_words = [w for w in words if word in w]
+        else:
+            self.check_words = words
 
     def is_exact_match(self):
         """
