@@ -103,7 +103,7 @@ class CheckWord:
         return self.word in self.check_words
 
 class Chain:
-    def __init__(self, start_x, start_y, board, words):
+    def __init__(self, start_x, start_y, board, forward_words, backward_words):
         """
         Инициализация цепочки для составления слова.
         :param start_x: Начальная координата X.
@@ -114,14 +114,10 @@ class Chain:
         self.cells = [board.grid[start_y][start_x]]  # Список ячеек, составляющих цепочку
         self.forward_check = None  # Проверка слова в прямом направлении
         self.backward_check = None  # Проверка слова в обратном направлении
-        self.words = words
+        self.forward_words = forward_words
+        self.backward_words = backward_words
 
-    def add_cell(self, cell):
-        """
-        Добавляет ячейку в цепочку.
-        :param cell: Объект Cell для добавления.
-        """
-        self.cells.append(cell)
+        self.update_checks()
 
     def get_word_forward(self):
         """
@@ -143,30 +139,56 @@ class Chain:
         """
         forward_word = self.get_word_forward()
         backward_word = self.get_word_backward()
-        self.forward_check = CheckWord(forward_word, self.words)
-        self.backward_check = CheckWord(backward_word, self.words)
+        self.forward_check = CheckWord(forward_word, self.forward_words)
+        self.backward_check = CheckWord(backward_word, self.backward_words)
 
-    def get_adjacent_free_cells(self, cell, board):
+    def get_adjacent_free_cells(self, cell):
         """
         Возвращает кортеж свободных ячеек, примыкающих к заданной ячейке.
-        :param cell: Текущая ячейка.
-        :param board: Игровое поле.
-        :return: Кортеж свободных примыкающих ячеек.
+        :param cell: Ячейка, вокруг которой ищутся свободные примыкающие ячейки.
+        :return: Список примыкающих свободных ячеек.
         """
-        directions = [
-            (-1, 0), (1, 0), (0, -1), (0, 1),  # Вверх, вниз, влево, вправо
-        ]
-        free_cells = []
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+        adjacent_cells = []
         for dx, dy in directions:
             nx, ny = cell.x + dx, cell.y + dy
-            if 0 <= nx < board.size and 0 <= ny < board.size:
-                neighbor = board.grid[ny][nx]
-                if neighbor not in self.cells and not neighbor.is_used:
-                    free_cells.append(neighbor)
-        return tuple(free_cells)
+            if 0 <= nx < len(self.cells) and 0 <= ny < len(self.cells[0]):
+                neighbor = self.cells[0][0].grid[ny][nx]
+                if not neighbor.is_used and neighbor not in self.cells:
+                    adjacent_cells.append(neighbor)
+        return adjacent_cells
+
+    def create_new_chains(self, board):
+        """
+        Создаёт список новых цепочек на основе текущей цепочки, добавляя ячейки в начало или конец.
+        :param board: Игровое поле Board.
+        :return: Список новых цепочек.
+        """
+        new_chains = []
+        start_cell = self.cells[0]
+        end_cell = self.cells[-1]
+
+        # Для ячеек, примыкающих к первой ячейке
+        for adj_cell in self.get_adjacent_free_cells(start_cell):
+            new_chain = Chain(adj_cell.x, adj_cell.y, board, self.forward_words, self.backward_words)
+            new_chain.cells = [adj_cell] + self.cells
+
+            if new_chain.forward_check.check_words or new_chain.backward_check.check_words:
+                new_chains.append(new_chain)
+
+        # Для ячеек, примыкающих к последней ячейке
+        for adj_cell in self.get_adjacent_free_cells(end_cell):
+            new_chain = Chain(adj_cell.x, adj_cell.y, board, self.forward_words, self.backward_words)
+            new_chain.cells = self.cells + [adj_cell]
+
+            if new_chain.forward_check.check_words or new_chain.backward_check.check_words:
+                new_chains.append(new_chain)
+
+        return new_chains
 
 # Глобальная переменная для допустимых слов
-words = ["слово", "слон", "молоко", "кислота", "ананас", "игра", "цвет"]
+words = ["слово", "слон", "молоко", "кислота", "ананас", "игра", "цвет", "гол", "лад", "раскачка",
+        "залог", "политбюро", "утепление", "коварство"]
 
 def main():
     """
@@ -178,13 +200,13 @@ def main():
 
     # Тестовые данные для заполнения поля
     test_data = [
-        'опшлаан',
-        'раяитки',
-        'гамьлоф',
-        'нетизмб',
-        'колориу',
-        'сопентк',
-        'едаацив'
+        'ксаргол',
+        'ааюроза',
+        'чкбтило',
+        'оньладп',
+        'мерутеп',
+        'воетнел',
+        'тсравок'
     ]
 
     if size == len(test_data):
