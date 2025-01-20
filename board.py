@@ -1,3 +1,5 @@
+from itertools import repeat
+
 from colorama import init, Fore, Style
 
 init()
@@ -238,11 +240,6 @@ class Chain:
 # words = ["слово", "слон", "молоко", "кислота", "ананас", "игра", "цвет", "гол", "лад", "раскачка",
 #         "залог", "политбюро", "утепление", "коварство"]
 
-words = []
-
-with open('zdf.txt', 'r', encoding='utf-8') as f:
-    for line in f:
-        words.append(line.strip())
 
 def main():
     words = []
@@ -254,20 +251,20 @@ def main():
     Основная функция программы. Запрашивает размер матрицы, заполняет её и отображает.
     """
 
-
+    next_step = True
     size = 7
 
     board = Board(size)
 
     # Тестовые данные для заполнения поля
     test_data = [
-        'тсвьлук',
-        'речаогр',
-        'филолци',
-        'аотыбшо',
-        'квднему',
-        'езеколл',
-        'ртирспа'
+        'сафвйря',
+        'адйеахл',
+        'гзагюби',
+        'изжёлуд',
+        'тримесь',
+        'ннавртк',
+        'апотоло'
     ]
 
     if size == len(test_data):
@@ -280,12 +277,12 @@ def main():
 
 
     while True:
-        board.step += 1
-        result = board.find_free_cell()
-        if result is None:
-            break
+        if next_step:
+            result = board.find_free_cell()
+            if result is None:
+                break
+            start_x, start_y = result
 
-        start_x, start_y = result
         chain = Chain(start_x, start_y, board, words, words)
         board.chans = [chain]
 
@@ -318,6 +315,13 @@ def main():
                 break
 
         print("\nCлово:")
+        if not board.found_words:
+            print('Слово не найдено!')
+            next_step = False
+            start_x, start_y = map(int, input('Введите координаты: ').split())
+            continue
+
+        next_step = True
         print(max(board.found_words, key=lambda x: len(x[0].cells)))
         chains, word = max(board.found_words, key=lambda x: len(x[0].cells))
         print(word)
@@ -330,6 +334,8 @@ def main():
 
         print("\nВаше поле:")
         board.display_grid()
+        board.step += 1
+
 
     print('Головоломка собрана')
 
