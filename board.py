@@ -2,6 +2,7 @@ from colorama import init, Fore, Style
 
 init()
 
+colors = (Fore.GREEN,Fore.BLUE, Fore.MAGENTA, Fore.CYAN, Fore.RED, Fore.LIGHTBLUE_EX, Fore.LIGHTRED_EX, Fore.LIGHTMAGENTA_EX)
 
 class Cell:
     def __init__(self, letter, x, y):
@@ -12,7 +13,7 @@ class Cell:
         :param y: Координата по вертикали.
         """
         self.letter = letter  # Буква в ячейке
-        self.is_used = False  # Флаг, что ячейка уже используется в отгаданном слове
+        self.is_used = 0  # Флаг, что ячейка уже используется в отгаданном слове
         self.x = x            # Координата X
         self.y = y            # Координата Y
 
@@ -51,6 +52,7 @@ class Board:
         self.grid = [[Cell('', x, y) for x in range(size)] for y in range(size)]
         self.chans = []
         self.found_words = set()
+        self.step = 0
 
     def __repr__(self):
         """
@@ -77,7 +79,7 @@ class Board:
             row_display = []
             for cell in row:
                 if cell.is_used:
-                    row_display.append(Fore.GREEN + cell.letter + Style.RESET_ALL)  # Зелёный цвет для отгаданных
+                    row_display.append(colors[cell.is_used] + cell.letter + Style.RESET_ALL)  # Зелёный цвет для отгаданных
                 else:
                     row_display.append(Fore.WHITE + cell.letter + Style.RESET_ALL)  # Белый цвет для остальных
             print(' '.join(row_display))
@@ -118,7 +120,7 @@ class CheckWord:
         """
         self.word = word
         if len(self.word) >= 3:
-            self.check_words = [w for w in words if word in w]
+            self.check_words = set([w for w in words if word in w])
         else:
             self.check_words = words
 
@@ -144,16 +146,21 @@ class Chain:
         self.backward_words = backward_words
         self.board = board
 
+    def __hash__(self):
+        """
+        Возвращает хэш цепочки на основе координат всех ячеек.
+        """
+        return hash(tuple((cell.x, cell.y) for cell in self.cells + self.cells[::-1]))
+
+
     def __eq__(self, other):
-        if isinstance(other, Chain):
-            if len(self.cells) != len(other.cells):
-                return False
-            for i in range(len(self.cells)):
-                reversed_self = self.cells[::-1]
-                if self.cells[i] != other.cells[i]:
-                    return False
-            return True
-        return False
+        """
+        Сравнивает две цепочки по их ячейкам.
+        """
+        if not isinstance(other, Chain):
+            return False
+        return ([(cell.x, cell.y) for cell in self.cells] == [(cell.x, cell.y) for cell in other.cells] or
+                [(cell.x, cell.y) for cell in self.cells] == [(cell.x, cell.y) for cell in other.cells])
 
     def get_word_forward(self):
         """
@@ -202,7 +209,7 @@ class Chain:
         Создаёт список новых цепочек на основе текущей цепочки, добавляя ячейки в начало или конец.
         :return: Список новых цепочек.
         """
-        new_chains = []
+        new_chains = set()
         start_cell = self.cells[0]
         end_cell = self.cells[-1]
 
@@ -213,7 +220,7 @@ class Chain:
             new_chain.update_checks()
 
             if new_chain.forward_check.check_words or new_chain.backward_check.check_words:
-                new_chains.append(new_chain)
+                new_chains.add(new_chain)
 
         # Для ячеек, примыкающих к последней ячейке
         if len(self.cells) > 1:
@@ -223,7 +230,7 @@ class Chain:
                 new_chain.update_checks()
 
                 if new_chain.forward_check.check_words or new_chain.backward_check.check_words:
-                    new_chains.append(new_chain)
+                    new_chains.add(new_chain)
 
         return new_chains
 
@@ -238,22 +245,29 @@ with open('zdf.txt', 'r', encoding='utf-8') as f:
         words.append(line.strip())
 
 def main():
+    words = []
+
+    with open('zdf.txt', 'r', encoding='utf-8') as f:
+        for line in f:
+            words.append(line.strip())
     """
     Основная функция программы. Запрашивает размер матрицы, заполняет её и отображает.
     """
+
+
     size = 7
 
     board = Board(size)
 
     # Тестовые данные для заполнения поля
     test_data = [
-        'асстчка',
-        'рльроба',
-        'тптонкн',
-        'оерелив',
-        'рафиьлу',
-        'шдансоб',
-        'лангроз'
+        'тсвьлук',
+        'речаогр',
+        'филолци',
+        'аотыбшо',
+        'квднему',
+        'езеколл',
+        'ртирспа'
     ]
 
     if size == len(test_data):
@@ -264,41 +278,60 @@ def main():
     print("\nВаше поле:")
     board.display_grid()
 
-    start_x, start_y = board.find_free_cell()
-    chain = Chain(start_x, start_y, board, words, words)
-    board.chans = [chain]
-
-    i = 0
 
     while True:
-        i += 1
-        print('шаг', i)
-        new_chains = []
-        for chain in board.chans:
-            curr_chains = chain.create_new_chains()
-            for curr_chain in curr_chains:
-                if curr_chain not in new_chains:
-                    if curr_chain.forward_check.is_exact_match():
-                        board.found_words.add(curr_chain.get_word_forward())
-                    if curr_chain.backward_check.is_exact_match():
-                        board.found_words.add(curr_chain.get_word_backward())
-                    new_chains.append(curr_chain)
-
-        board.chans = new_chains
-
-        if new_chains:
-            for chain in board.chans:
-
-                print(chain, chain.get_word_forward(), chain.get_word_backward())
-                if i >= 2:
-                    print(chain.forward_check.check_words, chain.backward_check.check_words)
-
-        else:
+        board.step += 1
+        result = board.find_free_cell()
+        if result is None:
             break
 
-    print("\nВсе слова:")
-    for word in board.found_words:
+        start_x, start_y = result
+        chain = Chain(start_x, start_y, board, words, words)
+        board.chans = [chain]
+
+        i = 0
+
+        while True:
+            i += 1
+            print('шаг', i)
+            new_chains = set()
+            for chain in board.chans:
+                new_chains.update(chain.create_new_chains())
+
+            for chain in new_chains:
+                if len(chain.cells) > 2:
+                    if chain.forward_check.is_exact_match():
+                        board.found_words.add((chain, chain.get_word_forward()))
+                    if chain.backward_check.is_exact_match():
+                        board.found_words.add((chain, chain.get_word_backward()))
+
+            board.chans = new_chains
+
+            if new_chains:
+                pass
+                # for chain in board.chans:
+                #     print(chain, chain.get_word_forward(), chain.get_word_backward())
+                #     if i >= 2:
+                #         print(chain.forward_check.check_words, chain.backward_check.check_words)
+
+            else:
+                break
+
+        print("\nCлово:")
+        print(max(board.found_words, key=lambda x: len(x[0].cells)))
+        chains, word = max(board.found_words, key=lambda x: len(x[0].cells))
         print(word)
+
+        for cell in chains.cells:
+            x, y = cell.x, cell.y
+            board.grid[y][x].is_used = board.step
+
+        board.found_words = set()
+
+        print("\nВаше поле:")
+        board.display_grid()
+
+    print('Головоломка собрана')
 
 
 if __name__ == "__main__":
