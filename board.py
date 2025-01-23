@@ -81,7 +81,7 @@ class Board:
             row_display = []
             for cell in row:
                 if cell.is_used:
-                    row_display.append(colors[cell.is_used] + cell.letter + Style.RESET_ALL)  # Зелёный цвет для отгаданных
+                    row_display.append(colors[cell.is_used % len(colors)] + cell.letter + Style.RESET_ALL)  # Зелёный цвет для отгаданных
                 else:
                     row_display.append(Fore.WHITE + cell.letter + Style.RESET_ALL)  # Белый цвет для остальных
             print(' '.join(row_display))
