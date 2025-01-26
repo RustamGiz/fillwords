@@ -267,6 +267,17 @@ def main():
         'апотоло'
     ]
 
+    test_data = """Е Н Л А И К А  
+Л И Ш З Е О К  
+Ь М А К С А Р  
+А И Л Е Д И Б  
+К Ч О К Т Н У  
+Р Е А П О В Щ  
+А Г П К А К И  """.lower().split('\n')
+
+    for i in range(len(test_data)):
+        test_data[i] = test_data[i].replace(' ', '')
+
     if size == len(test_data):
         board.test_fill_grid(test_data)
     else:
@@ -290,7 +301,7 @@ def main():
 
         while True:
             i += 1
-            print('шаг', i)
+            print('.', end='')
             new_chains = set()
             for chain in board.chans:
                 new_chains.update(chain.create_new_chains())
