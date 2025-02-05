@@ -25,7 +25,7 @@ class Cell:
         self.color = DEFAULT_COLOR
 
     def __repr__(self):
-        return f"Cell({self.letter}, {self.x}, {self.y}, used={self.is_used}, color={self.color})"
+        return f"Cell({self.letter}, {self.x}, {self.y}, used={self.is_used})"
 
 
 class Board:
@@ -51,9 +51,14 @@ class Board:
 
     def get_cell(self, x, y):
         """Возвращает ячейку по координатам."""
-        if 0 <= y < len(self.grid) and 0 <= x < len(self.grid[y]):
+        if 0 <= y < self.height and 0 <= x < self.width:
             return self.grid[y][x]
         return None
+
+    def reset(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                self.grid[y][x].reset()
 
     def display(self):
         """Выводит игровое поле на экран с цветами найденных слов."""
@@ -65,48 +70,49 @@ class Board:
         return "\n".join(" ".join(cell.letter.upper() for cell in row) for row in self.grid)
 
 
-class WordPath:
-    def __init__(self, board, start_x, start_y):
-        """
-        Инициализирует объект WordPath.
-        :param board: Игровое поле (Board)
-        :param start_x: Начальная координата X
-        :param start_y: Начальная координата Y
-        """
-        self.board = board  # Ссылка на игровое поле
-        self.cells = [board.get_cell(start_x, start_y)] if board.get_cell(start_x, start_y) else []
-        self.dictionary = board.dictionary  # Словарь допустимых слов
-
-    def add_cell(self, x, y):
-        """Добавляет ячейку в путь слова по координатам."""
-        cell = self.board.get_cell(x, y)
-        if cell:
-            self.cells.append(cell)
-
-    def get_word(self):
-        """Возвращает слово, составленное из букв ячеек."""
-        return "".join(cell.letter for cell in self.cells)
-
-    def is_valid(self):
-        """Проверяет, является ли слово допустимым."""
-        return self.get_word() in self.dictionary
-
-    def highlight_word(self, color=Fore.RED):
-        """Подсвечивает найденное слово цветом."""
-        for cell in self.cells:
-            cell.set_color(color)
-
-    def reset(self):
-        """Очищает путь слова."""
-        self.cells.clear()
-
-    def __repr__(self):
-        """Возвращает строковое представление объекта."""
-        return f"WordPath({self.get_word()}, valid={self.is_valid()})"
+# class WordPath:
+#     def __init__(self, board, start_x, start_y):
+#         """
+#         Инициализирует объект WordPath.
+#         :param board: Игровое поле (Board)
+#         :param start_x: Начальная координата X
+#         :param start_y: Начальная координата Y
+#         """
+#         self.board = board  # Ссылка на игровое поле
+#         self.cells = [board.get_cell(start_x, start_y)] if board.get_cell(start_x, start_y) else []
+#         self.dictionary = board.dictionary  # Словарь допустимых слов
+#
+#     def add_cell(self, x, y):
+#         """Добавляет ячейку в путь слова по координатам."""
+#         cell = self.board.get_cell(x, y)
+#         if cell:
+#             self.cells.append(cell)
+#
+#     def get_word(self):
+#         """Возвращает слово, составленное из букв ячеек."""
+#         return "".join(cell.letter for cell in self.cells)
+#
+#     def is_valid(self):
+#         """Проверяет, является ли слово допустимым."""
+#         return self.get_word() in self.dictionary
+#
+#     def highlight_word(self, color=Fore.RED):
+#         """Подсвечивает найденное слово цветом."""
+#         for cell in self.cells:
+#             cell.set_color(color)
+#
+#     def reset(self):
+#         """Очищает путь слова."""
+#         self.cells.clear()
+#
+#     def __repr__(self):
+#         """Возвращает строковое представление объекта."""
+#         return f"WordPath({self.get_word()}, valid={self.is_valid()})"
 
 
 # Тестовый пример
 if __name__ == "__main__":
+    # Тестовые буквы
     test_letters = [
         "РИЛО",
         "КАВТ",
@@ -115,7 +121,25 @@ if __name__ == "__main__":
     ]
 
     board = Board(test_letters)
-    print("Игровое поле:")
+    print("Чистое поле:")
     board.display()
 
     print("\nЯчейка (1,1):", board.get_cell(1, 1))
+
+    cells = (
+        (0, 0),
+        (1, 0),
+        (2, 0),
+        (0, 1),
+        (1, 1)
+     )
+    for cell in cells:
+        board.get_cell(*cell).mark_used(0)
+
+    print("Заполнено одно слово:")
+    board.display()
+
+    board.reset()
+    print()
+    print("Чистое поле:")
+    board.display()
