@@ -1,6 +1,6 @@
 words = []
 
-with open('zdf.txt', 'r', encoding='utf-8') as f:
+with open('russian_nouns.txt', 'r', encoding='utf-8') as f:
     for line in f:
         words.append(line.strip())
 
