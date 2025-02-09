@@ -6,6 +6,8 @@ with open('russian_nouns.txt', 'r', encoding='utf-8') as f:
 
 print(len(words))
 
-substr = 'йар'
+substr = 'аир'
 
 print(len([word for word in words if substr in word]))
+
+print(substr in words)
