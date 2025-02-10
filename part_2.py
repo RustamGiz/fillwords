@@ -1,4 +1,5 @@
 from colorama import Fore, Style
+import time
 
 
 # Цвет для неиспользованной ячейки
@@ -30,11 +31,11 @@ class Board:
         self.dictionary = self.load_dictionary(dictionary_file)
         self.width = len(letter_rows[0]) if letter_rows else 0
         self.height = len(letter_rows)
-        self.count = 0
-        self.failed_cell = []
+        self.existing_paths = set()  # множество кортежей координат ячеек проверяемых слов
+
 
     def load_dictionary(self, filename):
-        """ Загрузка словаря """
+        """ Загрузка словаря слов """
         try:
             with open(filename, 'r', encoding='utf-8') as file:
                 return set(word.strip().lower() for word in file if len(word.strip()) >= 3)
@@ -67,10 +68,12 @@ class WordPath:
         return ''.join(cell.letter for cell in self.cells)
 
     def is_valid(self):
-        """ Проверка слова """
+        """ Проверка слова в прямом и обратном направлении"""
         word = self.get_word()
-        return word in self.dictionary
-
+        if word in self.dictionary:
+            return 1
+        if word[::-1] in self.dictionary:
+            return 2
 
     def filter_dictionary(self):
         """ Фильтрация словаря """
@@ -93,8 +96,8 @@ class WordPath:
         return free_cells
 
     def expand_paths(self):
+        """ Построение списка производных слов """
         new_paths = []  # Список производных слов
-        existing_paths = set()  # Множество кортежей координат ячеек
 
         for begin in [True, False]:  # Поиск свободных ячеек, прилежащих к началу или концу слова
             free_cells = self.get_adjacent_free_cells(begin)  # Список свободных ячеек
@@ -105,47 +108,41 @@ class WordPath:
                 reverse_tuple = path_tuple[::-1]  # Координаты обратного кортежа ячеек
 
                 # Проверка уникальности кортежа ячеек в прямом и обратном направлении
-                if path_tuple not in existing_paths and reverse_tuple not in existing_paths:
+                if path_tuple not in self.board.existing_paths and reverse_tuple not in self.board.existing_paths:
                     new_paths.append(WordPath(self.board, new_cells))  # Добавление производного слова
-                    existing_paths.add(path_tuple)  # Добавление уникального кортежа ячеек
+                    self.board.existing_paths.add(path_tuple)  # Добавление уникального кортежа ячеек
 
         return new_paths
 
-    def highlight_word(self, color=Fore.RED):
-        """ Выделение ячеек цепочки cells слова цветом"""
-        for cell in self.cells:
-            cell.set_color(color)
 
-
-def find_words(board, start_cell):
+def find_words(board, start_cells):
     """ Поиск слов на игровом поле """
     found_words = []  # Список найденных слов
 
-    path = WordPath(board, [start_cell])
-    paths = [path]
-    existing_paths = set()
+    path = WordPath(board, [start_cells]) # Создаем слово для начальной ячейки
+    paths = [path]  # включаем в список поисковых слов
 
-    while paths:
-        current_path = paths.pop()
-        current_path.filter_dictionary()
+    while paths:  # список поисковых слов не пуст
+        current_path = paths.pop()  # извлекаем слово из конца списка
+        if len(current_path.cells) >= 3: # Игнорируем слова, которые содержат меньше 3 букв
+            current_path.filter_dictionary()  # Обновляем множество подходящих слов
 
-        if directions := current_path.is_valid():
-            path_tuple = tuple((c.x, c.y) for c in current_path.cells)
-            reverse_tuple = path_tuple[::-1]
+        if not current_path.dictionary:  # Если множество подходящих слов пустое
+            continue  # Переходим к началу цикла
 
-            if path_tuple not in existing_paths and reverse_tuple not in existing_paths:
-                existing_paths.add(path_tuple)
-                if directions == 2:
-                    current_path.cells.reverse()
-                found_words.append(current_path)
+        if directions := current_path.is_valid(): # Проверка слова в прямом и обратном направлении
+            if directions == 2:  # Если слова содержится в словаре в обратном направлении, то переворачиваем список ячеек
+                current_path.cells.reverse()
+            found_words.append(current_path)  # Добавим слово в список найденных слов
 
-        if current_path.dictionary:
-            paths.extend(current_path.expand_paths())
+        paths.extend(current_path.expand_paths())  # Расширяем список поисковых слов
 
     return found_words
 
 
+# Тестовый пример
 if __name__ == '__main__':
+    # Данные для создания игрового поля
     test_board = [
         "РИЛО",
         "КАВТ",
@@ -153,13 +150,14 @@ if __name__ == '__main__':
         "ХОЛА"
     ]
 
+    # Создание и отображение игрового поля
     board = Board(test_board)
     board.display()
 
-    start_cell = board.get_cell(2, 1)
+    start_cell = board.get_cell(2, 2) # Получение ячейки с заданными координатами
+    words = find_words(board, start_cell)  # Запуск функции Поиска слов на игровом поле
 
-    words = find_words(board, start_cell)
-
+    # Вывод
     print('\nНайденные слова:')
     for word in sorted(words, key=lambda x: len(x.get_word()), reverse=True):
         print(word.get_word())
