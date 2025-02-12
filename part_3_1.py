@@ -150,9 +150,9 @@ def get_words(board, progress=False):
             start_cell = board.get_cell(x, y)  # Получение ячейки с заданными координатами
             words = find_words(board, start_cell)  # Запуск функции Поиска слов на игровом поле
             result.extend(words)
-            if progress:
+            if progress:  # Если нужно отразить прогресса
                 print('. ', end='')
-        if progress:
+        if progress:  # Если нужно отразить прогресса
             print()
     return result
 
@@ -173,10 +173,10 @@ if __name__ == '__main__':
     board = Board(test_board)
     board.display()
 
-    print("Получаем список слов")
+    print("\nПолучаем список слов")
     words = get_words(board, progress=True)
 
-    print('Вывод результата')
+    print('\nВывод результата')
     for word in sorted(words, key=lambda x: (-len(x.get_word()), x.get_word())):
         print(word.get_word(), end=', ')
     
