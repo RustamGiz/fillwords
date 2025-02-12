@@ -1,4 +1,5 @@
 from colorama import Fore, Style
+from itertools import cycle
 
 
 # Цвет для неиспользованной ячейки
@@ -91,7 +92,7 @@ class WordPath:
 
         for dx, dy in directions:
             adjacent = self.board.get_cell(cell.x + dx, cell.y + dy)
-            if (adjacent and adjacent.color == DEFAULT_COLOR and adjacent not in self.cells):
+            if adjacent and adjacent.color == DEFAULT_COLOR and adjacent not in self.cells:
                 free_cells.append(adjacent)
 
         return free_cells
@@ -142,26 +143,40 @@ def find_words(board, start_cells):
 
     return found_words
 
+def get_words(board, progress=False):
+    result = []
+    for x in range(board.width):
+        for y in range(board.height):
+            start_cell = board.get_cell(x, y)  # Получение ячейки с заданными координатами
+            words = find_words(board, start_cell)  # Запуск функции Поиска слов на игровом поле
+            result.extend(words)
+            if progress:
+                print('. ', end='')
+        if progress:
+            print()
+    return result
+
 
 # Тестовый пример
 if __name__ == '__main__':
     # Данные для создания игрового поля
     test_board = [
-        "РИЛО",
-        "КАВТ",
-        "ЭРАЙ",
-        "ХОЛА"
+        "убльза",
+        "зиипир",
+        "лнглза",
+        "ааьошм",
+        "донкои",
+        "далоад"
     ]
 
     # Создание и отображение игрового поля
     board = Board(test_board)
     board.display()
 
-    start_cell = board.get_cell(2, 1) # Получение ячейки с заданными координатами
-    words = find_words(board, start_cell)  # Запуск функции Поиска слов на игровом поле
+    print("Получаем список слов")
+    words = get_words(board, progress=True)
 
-    # Вывод
-    print('\nНайденные слова:')
-    # Выводим найденные слова с сортировкой по длине слова и алфавиту
-    for word in sorted(words, key=lambda x: (len(x.get_word()), x.get_word())):
-        print(word)
+    print('Вывод результата')
+    for word in sorted(words, key=lambda x: (-len(x.get_word()), x.get_word())):
+        print(word.get_word(), end=', ')
+    
