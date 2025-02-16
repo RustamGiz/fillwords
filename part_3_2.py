@@ -116,6 +116,20 @@ class WordPath:
 
         return new_paths
 
+    def fill_color(self, color):
+        """ Заполняет все ячейки слова заданным цветом """
+        for cell in self.cells:
+            cell.set_color(color)
+
+    def reset_color(self):
+        """ Присваивает ячейкам цвет по умолчанию """
+        for cell in self.cells:
+            cell.set_color(DEFAULT_COLOR)
+
+    def is_free(self):
+        """ Проверяет, что все ячейки свободны """
+        return all(cell.color == DEFAULT_COLOR for cell in self.cells)
+
     def __repr__(self):
         return f"WordPath('word={self.get_word()}, cells={self.cells})"
 
@@ -157,15 +171,40 @@ def get_words(board, progress=False):
             print()
     return result
 
+def backtracking_fill(board, word_paths):
+    """
+    Поиск покрытия игрового поля с помощью алгоритма поиска с возвратом.
+    Возвращает наилучшее покрытие игрового поля.
+    """
 
+    solution = None
+    # Проверяем, все ли ячейки уже покрыты
+    if all(cell.color != DEFAULT_COLOR for row in board.grid for cell in row):
+        return word_paths, True
+
+    # Сортируем слова по убыванию длины
+    sorted_paths = sorted(word_paths, key=lambda path: -len(path.cells))
+
+    for word_path in sorted_paths:
+        if word_path.is_free():  # Проверяем, что слово можно разместить
+            word_path.fill_color(next(cycle(WORD_COLORS)))  # Заполняем цветом
+            solution = backtracking_fill(board, [wp for wp in word_paths if wp != word_path])
+
+            word_path.reset_color()  # Откатываемся назад
+
+        if all(cell.color != DEFAULT_COLOR for row in board.grid for cell in row):
+            return solution
 # Тестовый пример
 if __name__ == '__main__':
     # Данные для создания игрового поля
     test_board = [
-        "РИЛО",
-        "КАВТ",
-        "ЭРАЙ",
-        "ХОЛА"
+        "анрвчаф",
+        "цожаинл",
+        "етльгна",
+        "эмадиве",
+        "бокяиср",
+        "умокзап",
+        "бенатал"
     ]
 
     # Создание и отображение игрового поля
@@ -179,4 +218,17 @@ if __name__ == '__main__':
     print('Всего слов:', len(words))
     words_list = [word.get_word() for word in sorted(words, key=lambda x: (-len(x.get_word()), x.get_word()))]
     print(*words_list, sep=', ')
+
+    # Ищем наилучшее покрытие
+    solution = backtracking_fill(board, words)
+
+    # Выводим результат
+    if solution:
+        for word_path in solution:
+            word_path.fill_color(next(cycle(WORD_COLORS)))  # Окрашиваем найденное решение
+
+        print("\nНаилучшее покрытие игрового поля:")
+        board.display()
+    else:
+        print("\nПолное покрытие не найдено. Выводим лучшее возможное решение.")
     
