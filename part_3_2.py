@@ -7,7 +7,7 @@ DEFAULT_COLOR = Fore.BLACK
 
 # Список цветов для найденных слов
 WORD_COLORS = [Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA, Fore.CYAN]
-
+COLOR_CYCLE = cycle(WORD_COLORS)
 
 class Cell:
     """ Ячейка игрового поля """
@@ -171,6 +171,31 @@ def get_words(board, progress=False):
             print()
     return result
 
+# def backtracking_fill(board, word_paths):
+#     """
+#     Поиск покрытия игрового поля с помощью алгоритма поиска с возвратом.
+#     Возвращает наилучшее покрытие игрового поля.
+#     """
+#
+#     solution = None
+#     # Проверяем, все ли ячейки уже покрыты
+#     if all(cell.color != DEFAULT_COLOR for row in board.grid for cell in row):
+#         return word_paths, True
+#
+#     # Сортируем слова по убыванию длины
+#     sorted_paths = sorted(word_paths, key=lambda path: -len(path.cells))
+#
+#     for word_path in sorted_paths:
+#         if word_path.is_free():  # Проверяем, что слово можно разместить
+#             word_path.fill_color(next(cycle(WORD_COLORS)))  # Заполняем цветом
+#             solution = backtracking_fill(board, [wp for wp in word_paths if wp != word_path])
+#
+#             word_path.reset_color()  # Откатываемся назад
+#
+#         if all(cell.color != DEFAULT_COLOR for row in board.grid for cell in row):
+#             return solution
+
+
 def backtracking_fill(board, word_paths):
     """
     Поиск покрытия игрового поля с помощью алгоритма поиска с возвратом.
@@ -180,22 +205,37 @@ def backtracking_fill(board, word_paths):
     solution = None
     # Проверяем, все ли ячейки уже покрыты
     if all(cell.color != DEFAULT_COLOR for row in board.grid for cell in row):
-        return word_paths, True
+        return []
+    if not word_paths:
+        return None
 
     # Сортируем слова по убыванию длины
-    sorted_paths = sorted(word_paths, key=lambda path: -len(path.cells))
+    # sorted_paths = sorted(word_paths, key=lambda path: -len(path.cells))
 
-    for word_path in sorted_paths:
+    for i in range(len(word_paths)):
+        word_path = word_paths[i]
         if word_path.is_free():  # Проверяем, что слово можно разместить
-            word_path.fill_color(next(cycle(WORD_COLORS)))  # Заполняем цветом
-            solution = backtracking_fill(board, [wp for wp in word_paths if wp != word_path])
+            word_path.fill_color(WORD_COLORS[1])  # Заполняем цветом
+            next_word_paths = [wp for wp in word_paths[i+1:] if wp.is_free()]
+
+            result = backtracking_fill(board, next_word_paths)
+            if result is None:
+                word_path.reset_color()  # Откатываемся назад
+                continue
+            solution = [word_path] + result
 
             word_path.reset_color()  # Откатываемся назад
-
-        if all(cell.color != DEFAULT_COLOR for row in board.grid for cell in row):
             return solution
+
+        return None
 # Тестовый пример
 if __name__ == '__main__':
+    test_board = [
+        "РИЛО",
+        "КАВТ",
+        "ЭРАЙ",
+        "ХОЛА"
+    ]
     # Данные для создания игрового поля
     test_board = [
         "анрвчаф",
@@ -213,21 +253,26 @@ if __name__ == '__main__':
 
     print("\nПолучаем список слов")
     words = get_words(board, progress=True)
+    words = [word for word in sorted(words, key=lambda x: (-len(x.get_word()), x.get_word()))]
 
     print('\nВывод результата')
     print('Всего слов:', len(words))
-    words_list = [word.get_word() for word in sorted(words, key=lambda x: (-len(x.get_word()), x.get_word()))]
+    words_list = [word.get_word() for word in words]
     print(*words_list, sep=', ')
 
     # Ищем наилучшее покрытие
     solution = backtracking_fill(board, words)
 
     # Выводим результат
+
     if solution:
         for word_path in solution:
-            word_path.fill_color(next(cycle(WORD_COLORS)))  # Окрашиваем найденное решение
+            color = next(COLOR_CYCLE)
+            print(color + word_path.get_word() + Style.RESET_ALL, end=', ')
 
-        print("\nНаилучшее покрытие игрового поля:")
+            word_path.fill_color(color)  # Окрашиваем найденное решение
+
+        print("\nРешение:")
         board.display()
     else:
         print("\nПолное покрытие не найдено. Выводим лучшее возможное решение.")
