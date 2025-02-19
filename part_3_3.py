@@ -1,7 +1,6 @@
 from colorama import Fore, Style
 from itertools import cycle
 
-
 # Цвет для неиспользованной ячейки
 DEFAULT_COLOR = Fore.BLACK
 
@@ -11,8 +10,10 @@ WORD_COLORS = [Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA, Fore.
 # Итератор для циклического перебора цветов
 COLOR_CYCLE = cycle(WORD_COLORS)
 
+
 class Cell:
     """ Ячейка игрового поля """
+
     def __init__(self, letter, x, y):
         self.letter = letter.lower()
         self.x = x
@@ -26,6 +27,7 @@ class Cell:
     def __repr__(self):
         return f'Cell({self.letter}, {self.x}, {self.y})'
 
+
 class Board:
     """ Игровое поле """
 
@@ -36,7 +38,6 @@ class Board:
         self.width = len(letter_rows[0]) if letter_rows else 0
         self.height = len(letter_rows)
         self.existing_paths = set()  # множество кортежей координат ячеек проверяемых слов
-
 
     def load_dictionary(self, filename):
         """ Загрузка словаря слов """
@@ -61,6 +62,7 @@ class Board:
 
 class WordPath:
     """ Путь ячеек слова на игровом поле """
+
     def __init__(self, board, cells):
         """ Инициализация """
         self.board = board
@@ -89,7 +91,8 @@ class WordPath:
         free_cells = []  # Список свободных ячеек
         if not self.cells:
             return free_cells
-        cell = self.cells[0] if begin else self.cells[-1]  # Первая или последняя ячейка, вокруг которой ищутся свободные ячейки
+        cell = self.cells[0] if begin else self.cells[
+            -1]  # Первая или последняя ячейка, вокруг которой ищутся свободные ячейки
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Список направлений поиска свободных ячеек
 
         for dx, dy in directions:
@@ -135,22 +138,23 @@ class WordPath:
     def __repr__(self):
         return f"WordPath('word={self.get_word()}, cells={self.cells})"
 
+
 def find_words(board, start_cells):
     """ Поиск слов для заданной ячейки на игровом поле """
     found_words = []  # Список найденных слов
 
-    path = WordPath(board, [start_cells]) # Создаем слово для начальной ячейки
+    path = WordPath(board, [start_cells])  # Создаем слово для начальной ячейки
     paths = [path]  # включаем в список поисковых слов
 
     while paths:  # список поисковых слов не пуст
         current_path = paths.pop()  # извлекаем слово из конца списка
-        if len(current_path.cells) >= 3: # Игнорируем слова, которые содержат меньше 3 букв
+        if len(current_path.cells) >= 3:  # Игнорируем слова, которые содержат меньше 3 букв
             current_path.filter_dictionary()  # Обновляем множество подходящих слов
 
         if not current_path.dictionary:  # Если множество подходящих слов пустое
             continue  # Переходим к началу цикла
 
-        if directions := current_path.is_valid(): # Проверка слова в прямом и обратном направлении
+        if directions := current_path.is_valid():  # Проверка слова в прямом и обратном направлении
             if directions == 2:  # Если слова содержится в словаре в обратном направлении, то переворачиваем список ячеек
                 current_path.cells.reverse()
             found_words.append(current_path)  # Добавим слово в список найденных слов
@@ -158,6 +162,7 @@ def find_words(board, start_cells):
         paths.extend(current_path.expand_paths())  # Расширяем список поисковых слов
 
     return found_words
+
 
 def get_words(board, progress=False):
     """ Поиск всех слов на игровом поле"""
@@ -199,7 +204,7 @@ def backtracking_fill(board, word_paths):
         # Проверка результата, если текущий выбор слова оказался неправильным
         if result is None:
             word_path.reset_color()  # Слово убирается с поля
-            continue # Переходим к следующему слову
+            continue  # Переходим к следующему слову
 
         # решение найдено
         result = [word_path] + result
@@ -209,14 +214,43 @@ def backtracking_fill(board, word_paths):
     # Проверили все слова, но ни один не подошел
     return None
 
+
+def manual_fill_mode(board, word_paths):
+    i = 0  # Начинаем с первого слова
+    color = next(COLOR_CYCLE)  # Устанавливаем новый цвет букв
+
+    # Пока список слов не будет пустым или указатель меньше длины списка
+    while word_paths and i < len(word_paths):
+        word_path = word_paths[i]  # Выводим слово для проверки
+        word_path.fill_color(color)  # Добавляем слово на поле
+
+        # Выводим заголовок со словом и печатаем игровое поле
+        print(f'\nСлово: {color + word_path.get_word().upper() + Style.RESET_ALL}')
+        board.display()
+
+        # Запрос на совпадении слова
+        result = input("\nСлово подходит (y/n): ").strip().lower()
+        if result[0] in ('y', 'д'):
+            color = next(COLOR_CYCLE)  # Переходим к следующему цвету
+            # Отбираются только те слова, которые можно разместить на оставшихся свободных ячейках.
+            word_paths = [wp for wp in word_paths[1:] if wp.is_free()]
+            i = 0  # Сбрасываем счетчик
+
+            # Если список подходящих слов пуст
+            if not word_paths:
+                print('\nНет подходящих слов для заполнения')
+                return None
+        else:
+            word_path.reset_color()  # Убираем слово с поля
+            i += 1  # переходим к следующему слову в списке
+
+    word_path.reset_color()  # убираем слово с поля
+    print('\nИтоговое поле:')
+    board.display()
+
+
 # Тестовый пример
 if __name__ == '__main__':
-    test_board = [
-        "РИЛО",
-        "КАВТ",
-        "ЭРАЙ",
-        "ХОЛА"
-    ]
     # Данные для создания игрового поля
     test_board = [
         "еразалс",
@@ -233,20 +267,14 @@ if __name__ == '__main__':
     print('Игровое поле:')
     board.display()
 
-    words = get_words(board, progress=True)
+    words = get_words(board)
     # Сортируем слова в порядке убывания их длины
-    words = [word for word in sorted(words, key=lambda x: (-len(x.get_word(),)))]
-
-
-    print('\nВывод результата')
-    print('Всего слов:', len(words))
-    words_list = [word.get_word() for word in words]
-    print(*words_list, sep=', ')
+    words = [word for word in sorted(words, key=lambda x: (-len(x.get_word(), )))]
 
     # Ищем решение
     solution = backtracking_fill(board, words)
 
-    if solution: # Если решение найдено
+    if solution:  # Если решение найдено
         # Выводим результат
         print('\nИгровое поле можно заполнить следующими словами:')
         for word_path in solution:
@@ -258,5 +286,7 @@ if __name__ == '__main__':
         print("\nРешение:")
         board.display()
     else:
-        print("\nИгровое поле заполнить не удалось.")
-    
+        result = input(
+            "\nИгровое поле заполнить не удалось. Продолжить в интерактивном режиме? (y/n): ").strip().lower()
+        if result[0] in ('y', 'д'):
+            manual_fill_mode(board, words)

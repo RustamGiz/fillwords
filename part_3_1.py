@@ -1,5 +1,4 @@
 from colorama import Fore, Style
-from itertools import cycle
 
 
 # Цвет для неиспользованной ячейки
