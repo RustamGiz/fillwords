@@ -211,22 +211,37 @@ def backtracking_fill(board, word_paths):
 
 # Тестовый пример
 if __name__ == '__main__':
-
-    # Данные для создания игрового поля
     test_board = [
         "РИЛО",
         "КАВТ",
         "ЭРАЙ",
         "ХОЛА"
     ]
+    # Данные для создания игрового поля
+    test_board = [
+        "еразалс",
+        "тдалвоо",
+        "яьещирк",
+        "хратром",
+        "инукесб",
+        "пдарави",
+        "елагило"
+    ]
+
     # Создание и отображение игрового поля
     board = Board(test_board)
     print('Игровое поле:')
     board.display()
 
-    words = get_words(board)
+    words = get_words(board, progress=True)
     # Сортируем слова в порядке убывания их длины
-    words = [word for word in sorted(words, key=lambda x: (-len(x.get_word()), x.get_word()))]
+    words = [word for word in sorted(words, key=lambda x: (-len(x.get_word(),)))]
+
+
+    print('\nВывод результата')
+    print('Всего слов:', len(words))
+    words_list = [word.get_word() for word in words]
+    print(*words_list, sep=', ')
 
     # Ищем решение
     solution = backtracking_fill(board, words)
