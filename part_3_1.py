@@ -1,5 +1,7 @@
-from colorama import Fore, Style
+from colorama import init, Fore, Style
 
+
+init()
 
 # Цвет для неиспользованной ячейки
 DEFAULT_COLOR = Fore.BLACK
